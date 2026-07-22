@@ -22,7 +22,13 @@ class PicameraCamera(Camera):
         self._cam = None
 
     def start(self):
-        from picamera2 import Picamera2  # will raise ImportError if missing
+        try:
+            from picamera2 import Picamera2
+        except ImportError:
+            import sys
+            # Fallback: picamera2 is apt-installed at /usr/lib/python3/dist-packages
+            sys.path.insert(0, "/usr/lib/python3/dist-packages")
+            from picamera2 import Picamera2
 
         self._cam = Picamera2()
         config = self._cam.create_video_configuration(
