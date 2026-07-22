@@ -11,10 +11,10 @@ import logging
 import sys
 import os
 
-# Ensure src/ is importable when running from project root
-_src = os.path.join(os.path.dirname(__file__))
-if _src not in sys.path:
-    sys.path.insert(0, os.path.dirname(_src))
+# Ensure project root is on sys.path for `src.` imports
+_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _root not in sys.path:
+    sys.path.insert(0, _root)
 
 from src.detector.camera import MockCamera, PicameraCamera
 from src.detector.detector import Detector, SharedState
