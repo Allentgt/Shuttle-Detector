@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shuttle Detector</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#181b23;--surface2:#1e2130;--border:#2a2d3a;
+  --text:#e2e4ea;--muted:#6b7080;--green:#22c55e;--red:#ef4444;
+  --radius:8px;--font:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+html{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5}
+body{min-height:100dvh;padding:16px;max-width:960px;margin:0 auto}
+
+/* Header */
+.header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.header h1{font-size:1.25rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.header .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background .3s}
+.header .dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+
+/* Stream */
+.stream-wrap{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+.stream-wrap img{width:100%;display:block;min-height:180px;object-fit:contain;background:#000}
+.disconnected{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(15,17,23,.85);font-size:.9rem;color:var(--muted);opacity:0;pointer-events:none;transition:opacity .3s}
+.disconnected.show{opacity:1;pointer-events:auto}
+.disconnected svg{width:32px;height:32px;stroke:var(--muted);stroke-width:1.5;fill:none}
+
+/* Grid: controls + last landing */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:540px){.grid{grid-template-columns:1fr}}
+
+/* Card base */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+
+/* Arm toggle card */
+.arm-card{display:flex;flex-direction:column;gap:12px}
+.arm-row{display:flex;align-items:center;gap:14px}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
+.toggle input{display:none}
+.toggle .track{position:absolute;inset:0;background:var(--border);border-radius:12px;transition:background .25s}
+.toggle input:checked+.track{background:var(--green)}
+.toggle .knob{position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .25s;pointer-events:none}
+.toggle input:checked~.knob{transform:translateX(20px)}
+.arm-label{font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:6px}
+.arm-label .indicator{width:8px;height:8px;border-radius:50%;transition:background .3s,box-shadow .3s}
+.arm-label .indicator.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.arm-label .indicator.off{border:2px solid var(--muted);background:transparent}
+
+/* Status row */
+.status-row{font-size:.82rem;color:var(--muted)}
+.status-row span{color:var(--text);font-weight:500}
+
+/* Snapshot card */
+.snapshot-card{display:flex;flex-direction:column;gap:8px}
+.snapshot-img{width:100%;aspect-ratio:4/3;background:var(--bg);border:1px solid var(--border);border-radius:6px;object-fit:cover;display:none}
+.snapshot-img.show{display:block}
+.snapshot-time{font-size:.82rem;color:var(--muted)}
+.snapshot-time span{color:var(--text);font-weight:500}
+.no-snap{font-size:.82rem;color:var(--muted);font-style:italic}
+
+/* Sound controls */
+.sound-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px}
+.sound-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sound-row input[type=file]{display:none}
+.browse-btn{
+  font-family:var(--font);font-size:.8rem;font-weight:500;
+  background:var(--surface2);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:8px 14px;cursor:pointer;transition:border-color .2s;
+}
+.browse-btn:hover{border-color:var(--muted)}
+.upload-btn{
+  font-family:var(--font);font-size:.8rem;font-weight:600;
+  background:var(--green);color:#000;border:none;
+  border-radius:6px;padding:8px 16px;cursor:pointer;transition:opacity .2s;
+}
+.upload-btn:hover{opacity:.85}
+.upload-btn:disabled{opacity:.4;cursor:not-allowed}
+.feedback{font-size:.78rem;font-weight:500;min-height:1.2em}
+.feedback.ok{color:var(--green)}
+.feedback.err{color:var(--red)}
+.test-btn{
+  font-family:var(--font);font-size:.8rem;font-weight:600;
+  background:var(--surface2);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:8px 16px;cursor:pointer;transition:border-color .2s;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.test-btn:hover{border-color:var(--muted)}
+.test-btn:active{transform:scale(.97)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="dot" id="statusDot"></div>
+  <h1>Shuttle Detector</h1>
+</div>
+
+<div class="stream-wrap">
+  <img id="feed" src="/stream" alt="Camera feed">
+  <div class="disconnected" id="disconnected">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+    Feed disconnected
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card arm-card">
+    <div class="card-label">System</div>
+    <div class="arm-row">
+      <label class="toggle">
+        <input type="checkbox" id="armToggle">
+        <div class="track"></div>
+        <div class="knob"></div>
+      </label>
+      <div class="arm-label">
+        <span class="indicator off" id="armIndicator"></span>
+        <span id="armText">DISARMED</span>
+      </div>
+    </div>
+    <div class="status-row">Last landing: <span id="lastTime">N/A</span></div>
+  </div>
+
+  <div class="card snapshot-card">
+    <div class="card-label">Last Landing</div>
+    <img class="snapshot-img" id="snapshot" alt="Last landing snapshot">
+    <div class="snapshot-time" id="snapTimeWrap" style="display:none">
+      <span id="snapTime"></span>
+    </div>
+    <div class="no-snap" id="noSnap">No landings recorded</div>
+  </div>
+</div>
+
+<div class="sound-card">
+  <div class="card-label">Sound</div>
+  <div class="sound-row">
+    <button class="browse-btn" onclick="document.getElementById('fileInput').click()">Browse…</button>
+    <input type="file" id="fileInput" accept=".wav">
+    <span id="fileName" style="font-size:.8rem;color:var(--muted)"></span>
+    <button class="upload-btn" id="uploadBtn" disabled>Upload</button>
+  </div>
+  <div class="feedback" id="uploadFeedback"></div>
+    <div class="sound-row">
+      <button class="test-btn" id="testBtn">&#9654; Test Sound</button>
+      <button class="test-btn" id="calBtn">&#9678; Calibrate Floor</button>
+    </div>
+    <div class="feedback" id="calFeedback"></div>
+  </div>
+</div>
+
+<!-- Calibration overlay -->
+<div class="cal-overlay" id="calOverlay">
+  <p>Click on the floor in the image</p>
+</div>
+<style>
+.cal-overlay{
+  position:fixed;inset:0;z-index:100;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(15,17,23,.7);cursor:crosshair;
+  pointer-events:none;
+}
+.cal-overlay.show{display:flex}
+.cal-overlay p{
+  background:var(--surface);border:1px solid var(--green);
+  padding:10px 20px;border-radius:8px;color:var(--green);
+  font-weight:600;font-size:.9rem;margin-top:40vh;
+}
+.cal-overlay .cal-img{position:absolute;inset:16px;object-fit:contain;width:auto;height:auto;max-width:calc(100% - 32px);max-height:calc(100% - 32px);pointer-events:auto}
+</style>
+<script>
+const $ = s => document.querySelector(s);
+
+// Feed error handling
+const feed = $('#feed'), disc = $('#disconnected');
+feed.onload = () => disc.classList.remove('show');
+feed.onerror = () => disc.classList.add('show');
+// Trigger check on load
+if (feed.complete && feed.naturalWidth === 0) disc.classList.add('show');
+
+// Arm toggle
+const armToggle = $('#armToggle'), armText = $('#armText'), armIndicator = $('#armIndicator'), statusDot = $('#statusDot');
+
+function setArmUI(armed) {
+  armToggle.checked = armed;
+  armText.textContent = armed ? 'ARMED' : 'DISARMED';
+  armIndicator.className = 'indicator ' + (armed ? 'on' : 'off');
+  statusDot.className = 'dot' + (armed ? ' on' : '');
+}
+
+armToggle.addEventListener('change', async () => {
+  const desired = armToggle.checked;
+  armToggle.disabled = true;
+  try {
+    const r = await fetch('/api/arm', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({armed: desired})
+    });
+    const d = await r.json();
+    setArmUI(d.armed);
+  } catch { setArmUI(!desired); }
+  armToggle.disabled = false;
+});
+
+// Status polling
+const lastTime = $('#lastTime'), snapshot = $('#snapshot'), snapTimeWrap = $('#snapTimeWrap'),
+      snapTime = $('#snapTime'), noSnap = $('#noSnap');
+
+async function pollStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    setArmUI(d.armed);
+
+    if (d.last_event_timestamp) {
+      const dt = new Date(d.last_event_timestamp * 1000);
+      lastTime.textContent = dt.toLocaleTimeString();
+      snapTime.textContent = dt.toLocaleTimeString();
+      snapTimeWrap.style.display = '';
+      noSnap.style.display = 'none';
+    } else {
+      lastTime.textContent = 'N/A';
+      snapTimeWrap.style.display = 'none';
+      noSnap.style.display = '';
+    }
+
+    if (d.last_event_snapshot) {
+      snapshot.src = d.last_event_snapshot + '?t=' + Date.now();
+      snapshot.classList.add('show');
+    } else {
+      snapshot.classList.remove('show');
+    }
+  } catch {}
+}
+
+// Init
+fetch('/api/arm').then(r=>r.json()).then(d=>setArmUI(d.armed)).catch(()=>{});
+pollStatus();
+setInterval(pollStatus, 2000);
+
+// Sound upload
+const fileInput = $('#fileInput'), uploadBtn = $('#uploadBtn'), uploadFeedback = $('#uploadFeedback'),
+      fileName = $('#fileName');
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) {
+    fileName.textContent = fileInput.files[0].name;
+    uploadBtn.disabled = false;
+    uploadFeedback.textContent = '';
+    uploadFeedback.className = 'feedback';
+  }
+});
+
+uploadBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  uploadBtn.disabled = true;
+  uploadFeedback.textContent = 'Uploading…';
+  uploadFeedback.className = 'feedback';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch('/api/sound', {method:'POST', body: fd});
+    if (r.ok) {
+      uploadFeedback.textContent = '✓ Uploaded';
+      uploadFeedback.className = 'feedback ok';
+      fileInput.value = '';
+      fileName.textContent = '';
+    } else {
+      throw new Error();
+    }
+  } catch {
+    uploadFeedback.textContent = 'Upload failed';
+    uploadFeedback.className = 'feedback err';
+  }
+  uploadBtn.disabled = false;
+});
+
+// Test sound
+$('#testBtn').addEventListener('click', async () => {
+  const btn = $('#testBtn');
+  btn.disabled = true;
+  try {
+    await fetch('/api/play-test', {method:'POST'});
+  } catch {}
+  btn.disabled = false;
+});
+
+// Floor calibration
+const calBtn = $('#calBtn'), calOverlay = $('#calOverlay'), calFeedback = $('#calFeedback');
+let calActive = false;
+
+calBtn.addEventListener('click', async () => {
+  if (calActive) return;
+  calActive = true;
+  calBtn.disabled = true;
+  calFeedback.textContent = '';
+  calFeedback.className = 'feedback';
+
+  // Show overlay with static frame
+  const img = document.createElement('img');
+  img.className = 'cal-img';
+  img.src = '/api/calibrate-frame?t=' + Date.now();
+  calOverlay.innerHTML = '';
+  calOverlay.appendChild(img);
+  const p = document.createElement('p');
+  p.textContent = 'Click on the floor in the image';
+  calOverlay.appendChild(p);
+  calOverlay.classList.add('show');
+
+  // Wait for click on image
+  img.onload = () => {
+    img.onclick = async (e) => {
+      const rect = img.getBoundingClientRect();
+      const scaleY = img.naturalHeight / rect.height;
+      const y = Math.round((e.clientY - rect.top) * scaleY);
+      calOverlay.classList.remove('show');
+      calActive = false;
+      calBtn.disabled = false;
+      try {
+        const r = await fetch('/api/calibrate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({y})
+        });
+        if (r.ok) {
+          calFeedback.textContent = '✓ Floor calibrated at y=' + y;
+          calFeedback.className = 'feedback ok';
+        } else throw Error();
+      } catch {
+        calFeedback.textContent = 'Calibration failed';
+        calFeedback.className = 'feedback err';
+      }
+    };
+  };
+});
+
+// Reset calibration on double-click cal button
+calBtn.addEventListener('dblclick', async () => {
+  if (calActive) return;
+  try {
+    await fetch('/api/calibrate', {method:'DELETE'});
+    calFeedback.textContent = 'Calibration reset';
+    calFeedback.className = 'feedback ok';
+  } catch {}
+});
+</script>
+</body>
+</html>

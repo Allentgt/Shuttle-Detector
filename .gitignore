@@ -1,0 +1,7 @@
+.venv/
+.idea/
+data/snapshots/
+data/sounds/
+data/models/
+__pycache__/
+*.pyc
