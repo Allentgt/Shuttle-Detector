@@ -7,7 +7,9 @@ logger = logging.getLogger(__name__)
 
 
 class BackgroundSubtractor:
-    def __init__(self, history=500, var_threshold=16, detect_shadows=False):
+    def __init__(self, history=500, var_threshold=16, detect_shadows=False,
+                 learning_rate: float | None = None):
+        self._learning_rate = learning_rate  # None = auto, 0 = never update background
         self._sub = cv2.createBackgroundSubtractorMOG2(
             history=history,
             varThreshold=var_threshold,
@@ -15,7 +17,7 @@ class BackgroundSubtractor:
         )
 
     def apply(self, frame: np.ndarray) -> np.ndarray:
-        return self._sub.apply(frame)
+        return self._sub.apply(frame, learningRate=self._learning_rate)
 
 
 class BlobFilter:

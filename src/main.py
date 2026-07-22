@@ -44,6 +44,8 @@ def main():
     parser.add_argument("--fall-pixels", type=float, default=20, help="Min Y distance to confirm object fell from above")
     parser.add_argument("--min-aspect", type=float, default=0.3, help="Min blob aspect ratio (w/h)")
     parser.add_argument("--max-aspect", type=float, default=3.0, help="Max blob aspect ratio (w/h)")
+    parser.add_argument("--bg-learning-rate", type=float, default=None,
+                        help="Background model learning rate (default=auto, 0=never adapt)")
     parser.add_argument("--debug", action="store_true", help="Show CV debug overlay on stream")
     parser.add_argument("--person-model", default=None,
                         help="Path to TFLite COCO model (default: auto-download to data/models/)")
@@ -77,6 +79,7 @@ def main():
         min_aspect=args.min_aspect,
         max_aspect=args.max_aspect,
         debug=args.debug,
+        bg_learning_rate=args.bg_learning_rate,
     )
     detector.landing.persistence_frames = args.persistence
     detector.landing.cooldown_seconds = args.cooldown

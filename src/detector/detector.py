@@ -75,10 +75,11 @@ class Detector:
         min_aspect=0.3,
         max_aspect=3.0,
         debug=False,
+        bg_learning_rate: float | None = None,
     ):
         self.camera = camera
         self.state = state
-        self.bg_sub = BackgroundSubtractor()
+        self.bg_sub = BackgroundSubtractor(learning_rate=bg_learning_rate)
         self.blob_filter = BlobFilter(min_area, max_area, floor_ratio, min_aspect, max_aspect)
         self.landing = LandingDetector()
         self._thread: threading.Thread | None = None
