@@ -12,6 +12,9 @@ dependencies = [
     "tflite-runtime>=2.14.0; sys_platform == 'linux'",
 ]
 
+[tool.uv]
+python-system-site-packages = true  # needed for system-wide apt-installed picamera2
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/"]
 
