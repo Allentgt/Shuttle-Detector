@@ -124,44 +124,42 @@ body{min-height:100dvh;padding:16px;max-width:960px;margin:0 auto}
     </div>
   </div>
   <div class="sidebar">
-    <div class="sidebar-hdr" id="settingsToggle">
-      Detection Settings <span class="arrow">&#9650;</span>
-    </div>
-    <div class="settings-panel hidden" id="settingsPanel">
+    <div class="sidebar-hdr">Detection Settings</div>
+    <div class="settings-panel" id="settingsPanel">
       <div class="setting-row">
-        <label>Min area</label>
+        <label title="Smallest blob (pixels) to consider. Lower = more sensitive to small objects.">Min area</label>
         <div><input type="range" id="sMinArea" min="5" max="500"><span class="val" id="vMinArea"></span></div>
       </div>
       <div class="setting-row">
-        <label>Max area</label>
+        <label title="Largest blob (pixels) to consider. Raise for larger objects.">Max area</label>
         <div><input type="range" id="sMaxArea" min="100" max="20000"><span class="val" id="vMaxArea"></span></div>
       </div>
       <div class="setting-row">
-        <label>Floor ratio</label>
+        <label title="Fraction of frame height treated as floor (0 = bottom, 100 = middle).">Floor ratio %</label>
         <div><input type="range" id="sFloorRatio" min="0" max="100"><span class="val" id="vFloorRatio"></span></div>
       </div>
       <div class="setting-row">
-        <label>Min aspect</label>
+        <label title="Minimum width/height ratio of blobs. Filters out long thin noise.">Min aspect</label>
         <div><input type="range" id="sMinAspect" min="0" max="500"><span class="val" id="vMinAspect"></span></div>
       </div>
       <div class="setting-row">
-        <label>Max aspect</label>
+        <label title="Maximum width/height ratio of blobs. Filters out long thin noise.">Max aspect</label>
         <div><input type="range" id="sMaxAspect" min="100" max="1000"><span class="val" id="vMaxAspect"></span></div>
       </div>
       <div class="setting-row">
-        <label>Persistence</label>
+        <label title="Frames a blob must appear consecutively before triggering. Higher = fewer false triggers.">Persistence</label>
         <div><input type="range" id="sPersist" min="1" max="20"><span class="val" id="vPersist"></span></div>
       </div>
       <div class="setting-row">
-        <label>Cooldown</label>
+        <label title="Minimum seconds between triggers. Prevents rapid re-triggering.">Cooldown s</label>
         <div><input type="range" id="sCooldown" min="0" max="100"><span class="val" id="vCooldown"></span></div>
       </div>
       <div class="setting-row">
-        <label>Fall pixels</label>
+        <label title="Min distance (px) the blob must have fallen. 0 = any motion is enough.">Fall pixels</label>
         <div><input type="range" id="sFallPx" min="0" max="100"><span class="val" id="vFallPx"></span></div>
       </div>
       <div class="setting-row">
-        <label>Match dist</label>
+        <label title="Max distance (px) a blob centroid moves between frames and still count as the same track.">Match dist</label>
         <div><input type="range" id="sMatchDist" min="5" max="200"><span class="val" id="vMatchDist"></span></div>
       </div>
     </div>
@@ -399,12 +397,7 @@ calBtn.addEventListener('click', async () => {
   };
 });
 
-// Settings panel
-const settingsToggle = $('#settingsToggle'), settingsPanel = $('#settingsPanel');
-settingsToggle.addEventListener('click', () => {
-  settingsPanel.classList.toggle('hidden');
-  settingsToggle.classList.toggle('open');
-});
+// Settings panel – always visible, no toggle needed
 
 const sliderIds = [
   'sMinArea','sMaxArea','sFloorRatio','sMinAspect','sMaxAspect',
