@@ -91,22 +91,21 @@ body{min-height:100dvh;padding:16px;max-width:960px;margin:0 auto}
 .test-btn:active{transform:scale(.97)}
 
 /* Settings panel */
-.settings-toggle{
-  font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:10px 16px;width:100%;text-align:left;color:var(--text);
-  display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;
-  transition:border-color .2s;
-}
-.settings-toggle:hover{border-color:var(--muted)}
-.settings-toggle .arrow{transition:transform .3s;font-size:.7rem}
-.settings-toggle.open .arrow{transform:rotate(180deg)}
-.settings-panel{display:none;flex-direction:column;gap:12px;margin-bottom:16px}
-.settings-panel.open{display:flex}
-.setting-row{display:grid;grid-template-columns:1fr 80px;align-items:center;gap:12px}
-.setting-row label{font-size:.82rem;color:var(--text)}
-.setting-row input[type=range]{width:100%;accent-color:var(--green)}
-.setting-row .val{font-size:.82rem;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+/* Stream + Sidebar layout */
+.main-layout{display:grid;grid-template-columns:1fr 280px;gap:16px;margin-bottom:16px}
+@media(max-width:720px){.main-layout{grid-template-columns:1fr}}
+
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.sidebar .card{margin:0}
+.settings-panel{display:flex;flex-direction:column;gap:10px}
+.settings-panel.hidden{display:none}
+.setting-row{display:grid;grid-template-columns:1fr 60px;align-items:center;gap:8px}
+.setting-row label{font-size:.75rem;color:var(--text);white-space:nowrap}
+.setting-row input[type=range]{width:100%;accent-color:var(--green);height:4px}
+.setting-row .val{font-size:.75rem;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.sidebar-hdr{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-bottom:4px;border-bottom:1px solid var(--border);user-select:none}
+.sidebar-hdr .arrow{transition:transform .3s;font-size:.6rem}
+.sidebar-hdr.open .arrow{transform:rotate(180deg)}
 </style>
 </head>
 <body>
@@ -116,11 +115,56 @@ body{min-height:100dvh;padding:16px;max-width:960px;margin:0 auto}
   <h1>Shuttle Detector</h1>
 </div>
 
-<div class="stream-wrap">
-  <img id="feed" src="/stream" alt="Camera feed">
-  <div class="disconnected" id="disconnected">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-    Feed disconnected
+<div class="main-layout">
+  <div class="stream-wrap">
+    <img id="feed" src="/stream" alt="Camera feed">
+    <div class="disconnected" id="disconnected">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      Feed disconnected
+    </div>
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-hdr" id="settingsToggle">
+      Detection Settings <span class="arrow">&#9650;</span>
+    </div>
+    <div class="settings-panel hidden" id="settingsPanel">
+      <div class="setting-row">
+        <label>Min area</label>
+        <div><input type="range" id="sMinArea" min="5" max="500"><span class="val" id="vMinArea"></span></div>
+      </div>
+      <div class="setting-row">
+        <label>Max area</label>
+        <div><input type="range" id="sMaxArea" min="100" max="20000"><span class="val" id="vMaxArea"></span></div>
+      </div>
+      <div class="setting-row">
+        <label>Floor ratio</label>
+        <div><input type="range" id="sFloorRatio" min="0" max="100"><span class="val" id="vFloorRatio"></span></div>
+      </div>
+      <div class="setting-row">
+        <label>Min aspect</label>
+        <div><input type="range" id="sMinAspect" min="0" max="500"><span class="val" id="vMinAspect"></span></div>
+      </div>
+      <div class="setting-row">
+        <label>Max aspect</label>
+        <div><input type="range" id="sMaxAspect" min="100" max="1000"><span class="val" id="vMaxAspect"></span></div>
+      </div>
+      <div class="setting-row">
+        <label>Persistence</label>
+        <div><input type="range" id="sPersist" min="1" max="20"><span class="val" id="vPersist"></span></div>
+      </div>
+      <div class="setting-row">
+        <label>Cooldown</label>
+        <div><input type="range" id="sCooldown" min="0" max="100"><span class="val" id="vCooldown"></span></div>
+      </div>
+      <div class="setting-row">
+        <label>Fall pixels</label>
+        <div><input type="range" id="sFallPx" min="0" max="100"><span class="val" id="vFallPx"></span></div>
+      </div>
+      <div class="setting-row">
+        <label>Match dist</label>
+        <div><input type="range" id="sMatchDist" min="5" max="200"><span class="val" id="vMatchDist"></span></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -165,48 +209,6 @@ body{min-height:100dvh;padding:16px;max-width:960px;margin:0 auto}
       <button class="test-btn" id="calBtn">&#9678; Calibrate Floor</button>
     </div>
     <div class="feedback" id="calFeedback"></div>
-  </div>
-</div>
-
-<button class="settings-toggle" id="settingsToggle">
-  Detection Settings <span class="arrow">&#9650;</span>
-</button>
-<div class="settings-panel" id="settingsPanel">
-  <div class="setting-row">
-    <label>Min blob area</label>
-    <div><input type="range" id="sMinArea" min="5" max="500"><span class="val" id="vMinArea"></span></div>
-  </div>
-  <div class="setting-row">
-    <label>Max blob area</label>
-    <div><input type="range" id="sMaxArea" min="100" max="20000"><span class="val" id="vMaxArea"></span></div>
-  </div>
-  <div class="setting-row">
-    <label>Floor ratio</label>
-    <div><input type="range" id="sFloorRatio" min="0" max="100"><span class="val" id="vFloorRatio"></span></div>
-  </div>
-  <div class="setting-row">
-    <label>Min aspect (w/h)</label>
-    <div><input type="range" id="sMinAspect" min="0" max="500"><span class="val" id="vMinAspect"></span></div>
-  </div>
-  <div class="setting-row">
-    <label>Max aspect (w/h)</label>
-    <div><input type="range" id="sMaxAspect" min="100" max="1000"><span class="val" id="vMaxAspect"></span></div>
-  </div>
-  <div class="setting-row">
-    <label>Persistence (frames)</label>
-    <div><input type="range" id="sPersist" min="1" max="20"><span class="val" id="vPersist"></span></div>
-  </div>
-  <div class="setting-row">
-    <label>Cooldown (sec)</label>
-    <div><input type="range" id="sCooldown" min="0" max="100"><span class="val" id="vCooldown"></span></div>
-  </div>
-  <div class="setting-row">
-    <label>Fall pixels</label>
-    <div><input type="range" id="sFallPx" min="0" max="100"><span class="val" id="vFallPx"></span></div>
-  </div>
-  <div class="setting-row">
-    <label>Match distance</label>
-    <div><input type="range" id="sMatchDist" min="5" max="200"><span class="val" id="vMatchDist"></span></div>
   </div>
 </div>
 
@@ -400,7 +402,7 @@ calBtn.addEventListener('click', async () => {
 // Settings panel
 const settingsToggle = $('#settingsToggle'), settingsPanel = $('#settingsPanel');
 settingsToggle.addEventListener('click', () => {
-  settingsPanel.classList.toggle('open');
+  settingsPanel.classList.toggle('hidden');
   settingsToggle.classList.toggle('open');
 });
 
