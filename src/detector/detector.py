@@ -118,6 +118,7 @@ class Detector:
 
             frame = self.camera.read_frame()
             if frame is None:
+                logger.warning("Empty frame from camera — check camera connection")
                 time.sleep(0.03)
                 continue
 
