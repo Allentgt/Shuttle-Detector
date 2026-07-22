@@ -65,7 +65,12 @@ class LandingDetector:
         self.shuttle_detector = None  # optional ShuttleDetector instance
 
     def _fell_from_above(self, cx, cy) -> bool:
-        """Check if any recent blob was above this position (shuttle fell down)."""
+        """Check if any recent blob was above this position (shuttle fell down).
+        
+        0 = disable check (treat as always true).
+        """
+        if self.fall_check_pixels == 0:
+            return True
         for hist in self._blob_history[:-1]:  # exclude current frame
             for hx, hy in hist:
                 if (abs(hx - cx) < 50 and  # X tolerance (shuttle may drift)
