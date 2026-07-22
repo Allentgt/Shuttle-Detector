@@ -89,6 +89,24 @@ body{min-height:100dvh;padding:16px;max-width:960px;margin:0 auto}
 }
 .test-btn:hover{border-color:var(--muted)}
 .test-btn:active{transform:scale(.97)}
+
+/* Settings panel */
+.settings-toggle{
+  font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 16px;width:100%;text-align:left;color:var(--text);
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;
+  transition:border-color .2s;
+}
+.settings-toggle:hover{border-color:var(--muted)}
+.settings-toggle .arrow{transition:transform .3s;font-size:.7rem}
+.settings-toggle.open .arrow{transform:rotate(180deg)}
+.settings-panel{display:none;flex-direction:column;gap:12px;margin-bottom:16px}
+.settings-panel.open{display:flex}
+.setting-row{display:grid;grid-template-columns:1fr 80px;align-items:center;gap:12px}
+.setting-row label{font-size:.82rem;color:var(--text)}
+.setting-row input[type=range]{width:100%;accent-color:var(--green)}
+.setting-row .val{font-size:.82rem;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -147,6 +165,48 @@ body{min-height:100dvh;padding:16px;max-width:960px;margin:0 auto}
       <button class="test-btn" id="calBtn">&#9678; Calibrate Floor</button>
     </div>
     <div class="feedback" id="calFeedback"></div>
+  </div>
+</div>
+
+<button class="settings-toggle" id="settingsToggle">
+  Detection Settings <span class="arrow">&#9650;</span>
+</button>
+<div class="settings-panel" id="settingsPanel">
+  <div class="setting-row">
+    <label>Min blob area</label>
+    <div><input type="range" id="sMinArea" min="5" max="500"><span class="val" id="vMinArea"></span></div>
+  </div>
+  <div class="setting-row">
+    <label>Max blob area</label>
+    <div><input type="range" id="sMaxArea" min="100" max="20000"><span class="val" id="vMaxArea"></span></div>
+  </div>
+  <div class="setting-row">
+    <label>Floor ratio</label>
+    <div><input type="range" id="sFloorRatio" min="0" max="100"><span class="val" id="vFloorRatio"></span></div>
+  </div>
+  <div class="setting-row">
+    <label>Min aspect (w/h)</label>
+    <div><input type="range" id="sMinAspect" min="0" max="500"><span class="val" id="vMinAspect"></span></div>
+  </div>
+  <div class="setting-row">
+    <label>Max aspect (w/h)</label>
+    <div><input type="range" id="sMaxAspect" min="100" max="1000"><span class="val" id="vMaxAspect"></span></div>
+  </div>
+  <div class="setting-row">
+    <label>Persistence (frames)</label>
+    <div><input type="range" id="sPersist" min="1" max="20"><span class="val" id="vPersist"></span></div>
+  </div>
+  <div class="setting-row">
+    <label>Cooldown (sec)</label>
+    <div><input type="range" id="sCooldown" min="0" max="100"><span class="val" id="vCooldown"></span></div>
+  </div>
+  <div class="setting-row">
+    <label>Fall pixels</label>
+    <div><input type="range" id="sFallPx" min="0" max="100"><span class="val" id="vFallPx"></span></div>
+  </div>
+  <div class="setting-row">
+    <label>Match distance</label>
+    <div><input type="range" id="sMatchDist" min="5" max="200"><span class="val" id="vMatchDist"></span></div>
   </div>
 </div>
 
@@ -336,6 +396,65 @@ calBtn.addEventListener('click', async () => {
     };
   };
 });
+
+// Settings panel
+const settingsToggle = $('#settingsToggle'), settingsPanel = $('#settingsPanel');
+settingsToggle.addEventListener('click', () => {
+  settingsPanel.classList.toggle('open');
+  settingsToggle.classList.toggle('open');
+});
+
+const sliderIds = [
+  'sMinArea','sMaxArea','sFloorRatio','sMinAspect','sMaxAspect',
+  'sPersist','sCooldown','sFallPx','sMatchDist'
+];
+const valIds = sliderIds.map(id => id.replace('s','v'));
+const configKeys = [
+  'min_area','max_area','floor_ratio','min_aspect','max_aspect',
+  'persistence','cooldown','fall_pixels','match_distance'
+];
+const scalar = {'floor_ratio':100,'min_aspect':100,'max_aspect':100,'cooldown':10,'fall_pixels':1,'match_distance':1,'min_area':1,'max_area':1,'persistence':1};
+
+async function loadConfig() {
+  try {
+    const r = await fetch('/api/config');
+    const cfg = await r.json();
+    sliderIds.forEach((sid, i) => {
+      const key = configKeys[i];
+      const val = cfg[key] * (scalar[key] || 1);
+      const el = document.getElementById(sid);
+      if (el) el.value = val;
+      const vid = valIds[i];
+      const vel = document.getElementById(vid);
+      if (vel) vel.textContent = cfg[key];
+    });
+  } catch {}
+}
+
+sliderIds.forEach((sid, i) => {
+  const el = document.getElementById(sid);
+  if (!el) return;
+  el.addEventListener('input', () => {
+    const key = configKeys[i];
+    const raw = parseFloat(el.value) / (scalar[key] || 1);
+    const vid = valIds[i];
+    const vel = document.getElementById(vid);
+    if (vel) vel.textContent = raw;
+  });
+  el.addEventListener('change', async () => {
+    const key = configKeys[i];
+    const raw = parseFloat(el.value) / (scalar[key] || 1);
+    try {
+      await fetch('/api/config', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({[key]: raw})
+      });
+    } catch {}
+  });
+});
+
+loadConfig();
 
 // Reset calibration on double-click cal button
 calBtn.addEventListener('dblclick', async () => {

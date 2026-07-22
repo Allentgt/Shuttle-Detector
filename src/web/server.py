@@ -12,7 +12,7 @@ SNAPSHOT_DIR = "data/snapshots"
 SOUND_DIR = "data/sounds"
 
 
-def create_app(state) -> FastAPI:
+def create_app(state, detector=None) -> FastAPI:
     app = FastAPI(title="Shuttle Detector")
 
     @app.get("/")
@@ -54,6 +54,55 @@ def create_app(state) -> FastAPI:
             ),
             "sound_file": state.get_sound_path(),
         }
+
+    def _read_config():
+        """Read live config from detector objects."""
+        cfg = {}
+        if detector:
+            bf = detector.blob_filter
+            ld = detector.landing
+            cfg["min_area"] = bf.min_area
+            cfg["max_area"] = bf.max_area
+            cfg["floor_ratio"] = bf.floor_ratio
+            cfg["min_aspect"] = bf.min_aspect
+            cfg["max_aspect"] = bf.max_aspect
+            cfg["persistence"] = ld.persistence_frames
+            cfg["cooldown"] = ld.cooldown_seconds
+            cfg["fall_pixels"] = ld.fall_check_pixels
+            cfg["match_distance"] = ld._match_distance
+        cfg["floor_y"] = state.floor_y
+        return cfg
+
+    @app.get("/api/config")
+    async def get_config():
+        return _read_config()
+
+    @app.post("/api/config")
+    async def set_config(body: dict):
+        if not detector:
+            return JSONResponse({"ok": False, "error": "Detector not available"}, status_code=503)
+        bf = detector.blob_filter
+        ld = detector.landing
+        if "min_area" in body:
+            bf.min_area = int(body["min_area"])
+        if "max_area" in body:
+            bf.max_area = int(body["max_area"])
+        if "floor_ratio" in body:
+            bf.floor_ratio = float(body["floor_ratio"])
+        if "min_aspect" in body:
+            bf.min_aspect = float(body["min_aspect"])
+        if "max_aspect" in body:
+            bf.max_aspect = float(body["max_aspect"])
+        if "persistence" in body:
+            ld.persistence_frames = int(body["persistence"])
+        if "cooldown" in body:
+            ld.cooldown_seconds = float(body["cooldown"])
+        if "fall_pixels" in body:
+            ld.fall_check_pixels = float(body["fall_pixels"])
+        if "match_distance" in body:
+            ld._match_distance = float(body["match_distance"])
+        logger.info("Config updated: %s", body)
+        return _read_config()
 
     @app.get("/api/arm")
     async def get_arm():

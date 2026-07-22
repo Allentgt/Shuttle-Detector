@@ -101,7 +101,7 @@ def main():
     detector.shuttle_detector = sd
     detector.landing.shuttle_detector = sd
 
-    app = create_app(state)
+    app = create_app(state, detector=detector)
 
     logger.info("Starting detector...")
     detector.start()
