@@ -89,22 +89,24 @@ class LandingDetector:
         if len(self._blob_history) > self.fall_check_history:
             self._blob_history.pop(0)
 
-        matched = set()
+        active = set()
         for cx, cy in cur_centroids:
             best_key = None
-            for key, (tx, ty, _, _) in self._tracks.items():
+            for key, (tx, ty, _, _) in list(self._tracks.items()):
                 if abs(cx - tx) < self._match_distance and abs(cy - ty) < self._match_distance:
                     best_key = key
                     break
             if best_key is not None:
                 ox, oy, cnt, _ = self._tracks[best_key]
                 self._tracks[best_key] = (cx, cy, cnt + 1, 0)
-                matched.add(best_key)
+                active.add(best_key)
             else:
-                self._tracks.setdefault(len(self._tracks), (cx, cy, 1, 0))
+                key = len(self._tracks)
+                self._tracks[key] = (cx, cy, 1, 0)
+                active.add(key)
 
-        # Prune unmatched tracks
-        self._tracks = {k: v for k, v in self._tracks.items() if k in matched}
+        # Drop tracks that vanished
+        self._tracks = {k: v for k, v in self._tracks.items() if k in active}
 
         for key, (cx, cy, count, _) in self._tracks.items():
             if count >= self.persistence_frames:
