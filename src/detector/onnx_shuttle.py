@@ -90,8 +90,11 @@ class ONNXShuttleDetector:
             try:
                 inp = self._preprocess(frame)
                 out = self._session.run([self._output_name], {self._input_name: inp})[0]
-                scores = out[0, 4:, :]
-                max_conf = float(scores.max())
+                # Output shape: (1, 4+num_classes, N)
+                logits = out[0, 4:, :]  # class scores (raw logits or sigmoided)
+                # Apply sigmoid in case output is raw logits
+                probs = 1.0 / (1.0 + np.exp(-logits))
+                max_conf = float(probs.max())
                 with self._lock:
                     self._shuttle_present = max_conf >= self.confidence
             except Exception as e:

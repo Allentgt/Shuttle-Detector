@@ -56,6 +56,8 @@ def main():
     parser.add_argument("--shuttle-onnx", default=None,
                         help="Path to YOLOv8 ONNX model for shuttle detection "
                              "(e.g. data/weights/best.onnx)")
+    parser.add_argument("--shuttle-conf", type=float, default=0.25,
+                        help="Shuttle model confidence threshold (default: 0.25)")
     args = parser.parse_args()
 
     state = SharedState()
@@ -98,7 +100,7 @@ def main():
 
     # Shuttle ML detection filter (ONNX YOLOv8 model)
     if args.shuttle_onnx is not None:
-        sd = ONNXShuttleDetector(model_path=args.shuttle_onnx, confidence=0.25, interval=5)
+        sd = ONNXShuttleDetector(model_path=args.shuttle_onnx, confidence=args.shuttle_conf, interval=5)
         detector.shuttle_detector = sd
         detector.landing.shuttle_detector = sd
         logger.info("ONNX shuttle detection enabled (%s)", args.shuttle_onnx)
