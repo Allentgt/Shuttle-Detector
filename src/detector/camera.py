@@ -51,8 +51,10 @@ class PicameraCamera(Camera):
 
 
 class MockCamera(Camera):
-    def __init__(self, source: int | str = 0):
+    def __init__(self, source: int | str = 0, width: int = 640, height: int = 480):
         self.source = source
+        self._width = width
+        self._height = height
         self._cap = None
 
     def start(self):
@@ -60,6 +62,8 @@ class MockCamera(Camera):
         self._cap = cv2.VideoCapture(self.source)
         if not self._cap.isOpened():
             raise RuntimeError(f"Failed to open video source: {self.source}")
+        self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
+        self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._height)
 
     def stop(self):
         if self._cap:

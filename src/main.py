@@ -36,6 +36,8 @@ def main():
     parser.add_argument("--prod", action="store_true", help="Pi hardware mode (picamera or USB webcam + aplay)")
     parser.add_argument("--usb", type=int, default=None,
                         help="USB webcam index (omit to use picamera2 with --prod)")
+    parser.add_argument("--cam-width", type=int, default=640, help="Camera capture width (lower = faster USB)")
+    parser.add_argument("--cam-height", type=int, default=480, help="Camera capture height")
     parser.add_argument("--source", default=0, help="Video source for mock mode (file path or camera index)")
     parser.add_argument("--port", type=int, default=8000, help="Web server port")
     parser.add_argument("--min-area", type=int, default=200, help="Min blob area in pixels (lower = more sensitive)")
@@ -63,7 +65,7 @@ def main():
     if args.prod:
         if args.usb is not None:
             logger.info("USB webcam mode: /dev/video%d + aplay sound", args.usb)
-            camera = MockCamera(args.usb)
+            camera = MockCamera(args.usb, width=args.cam_width, height=args.cam_height)
         else:
             logger.info("Pi camera mode: picamera2 + aplay sound")
             camera = PicameraCamera()
@@ -73,7 +75,7 @@ def main():
             src = int(args.source)
         except ValueError:
             src = args.source
-        camera = MockCamera(src)
+        camera = MockCamera(src, width=args.cam_width, height=args.cam_height)
     player = SoundPlayer("data/sounds/current.wav")
 
     detector = Detector(
