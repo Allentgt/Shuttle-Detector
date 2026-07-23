@@ -19,7 +19,7 @@ if _root not in sys.path:
 from src.detector.camera import MockCamera, PicameraCamera
 from src.detector.detector import Detector, SharedState
 from src.detector.classifier import PersonFilter
-from src.detector.shuttle_detector import ShuttleDetector
+from src.detector.onnx_shuttle import ONNXShuttleDetector
 from src.sound.player import SoundPlayer
 from src.web.server import create_app
 import uvicorn
@@ -53,11 +53,9 @@ def main():
     parser.add_argument("--debug", action="store_true", help="Show CV debug overlay on stream")
     parser.add_argument("--person-model", default=None,
                         help="Path to TFLite COCO model (default: auto-download to data/models/)")
-    parser.add_argument("--shuttle-model", default=None,
-                        help="Roboflow model ID for shuttle detection "
-                             "(default: shuttlecock-detection-r9upv/1)")
-    parser.add_argument("--roboflow-api-key", default=None,
-                        help="Roboflow API key (or set ROBOFLOW_API_KEY env var)")
+    parser.add_argument("--shuttle-onnx", default=None,
+                        help="Path to YOLOv8 ONNX model for shuttle detection "
+                             "(e.g. data/weights/best.onnx)")
     args = parser.parse_args()
 
     state = SharedState()
@@ -98,18 +96,14 @@ def main():
     detector.person_filter = pf
     detector.landing.person_filter = pf
 
-    # Shuttle ML detection filter (Roboflow inference) — only when explicitly configured
-    if args.roboflow_api_key is not None:
-        sd = ShuttleDetector(
-            model_id=args.shuttle_model,
-            api_key=args.roboflow_api_key,
-            confidence=0.3,
-            interval=10,
-        )
+    # Shuttle ML detection filter (ONNX YOLOv8 model)
+    if args.shuttle_onnx is not None:
+        sd = ONNXShuttleDetector(model_path=args.shuttle_onnx, confidence=0.25, interval=5)
         detector.shuttle_detector = sd
         detector.landing.shuttle_detector = sd
+        logger.info("ONNX shuttle detection enabled (%s)", args.shuttle_onnx)
     else:
-        logger.info("No --roboflow-api-key given — shuttle ML gate disabled, CV-only mode")
+        logger.info("No --shuttle-onnx given — shuttle ML gate disabled, CV-only mode")
 
     app = create_app(state, detector=detector)
 

@@ -3,5 +3,6 @@
 data/snapshots/
 data/sounds/
 data/models/
+data/weights/
 __pycache__/
 *.pyc

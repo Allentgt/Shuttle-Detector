@@ -7,9 +7,9 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
     "opencv-python-headless>=4.9.0",
-    "numpy>=1.24.0,<2",  # tflite-runtime & onnxruntime not yet compatible with numpy 2
+    "numpy>=1.24.0",
     "python-multipart>=0.0.9",
-    "tflite-runtime>=2.14.0; sys_platform == 'linux'",
+    "onnxruntime>=1.18.0; sys_platform == 'linux'"
 ]
 
 [tool.hatch.build.targets.wheel]
