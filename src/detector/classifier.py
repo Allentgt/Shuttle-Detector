@@ -84,12 +84,16 @@ class PersonFilter:
             )
             return
 
-        self._interp = tflite.Interpreter(model_path=path)
-        self._interp.allocate_tensors()
-        self._input_details = self._interp.get_input_details()
-        self._output_details = self._interp.get_output_details()
-        # Input shape: [1, height, width, 3]
-        self._input_shape = self._input_details[0]["shape"]
+        try:
+            self._interp = tflite.Interpreter(model_path=path)
+            self._interp.allocate_tensors()
+            self._input_details = self._interp.get_input_details()
+            self._output_details = self._interp.get_output_details()
+            self._input_shape = self._input_details[0]["shape"]
+        except Exception:
+            logger.warning("Failed to init TFLite interpreter (numpy version mismatch?). "
+                           "Person detection disabled.", exc_info=True)
+            self._interp = None
 
     def detect(self, frame: np.ndarray) -> bool:
         """Returns True if a person is detected in the frame.
