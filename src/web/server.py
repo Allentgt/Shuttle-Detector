@@ -28,7 +28,7 @@ def create_app(state, detector=None) -> FastAPI:
                 frame = state.get_latest_frame()
                 if frame is not None:
                     ret, jpeg = cv2.imencode(
-                        ".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70]
+                        ".jpg", frame.copy(), [cv2.IMWRITE_JPEG_QUALITY, 70]
                     )
                     if ret:
                         yield (
