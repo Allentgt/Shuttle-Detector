@@ -33,7 +33,9 @@ logger = logging.getLogger("main")
 
 def main():
     parser = argparse.ArgumentParser(description="Shuttle Detector")
-    parser.add_argument("--prod", action="store_true", help="Enable Pi hardware (picamera + aplay)")
+    parser.add_argument("--prod", action="store_true", help="Pi hardware mode (picamera or USB webcam + aplay)")
+    parser.add_argument("--usb", type=int, default=None,
+                        help="USB webcam index (omit to use picamera2 with --prod)")
     parser.add_argument("--source", default=0, help="Video source for mock mode (file path or camera index)")
     parser.add_argument("--port", type=int, default=8000, help="Web server port")
     parser.add_argument("--min-area", type=int, default=200, help="Min blob area in pixels (lower = more sensitive)")
@@ -59,9 +61,12 @@ def main():
     state = SharedState()
 
     if args.prod:
-        logger.info("Production mode: Pi camera + aplay sound")
-        camera = PicameraCamera()
-        player = SoundPlayer("data/sounds/current.wav")
+        if args.usb is not None:
+            logger.info("USB webcam mode: /dev/video%d + aplay sound", args.usb)
+            camera = MockCamera(args.usb)
+        else:
+            logger.info("Pi camera mode: picamera2 + aplay sound")
+            camera = PicameraCamera()
     else:
         logger.info("Dev mode: mock camera (source=%s) + log sound", args.source)
         try:
@@ -69,7 +74,7 @@ def main():
         except ValueError:
             src = args.source
         camera = MockCamera(src)
-        player = SoundPlayer("data/sounds/current.wav")
+    player = SoundPlayer("data/sounds/current.wav")
 
     detector = Detector(
         camera, state,
