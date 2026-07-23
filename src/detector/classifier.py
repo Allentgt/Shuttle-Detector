@@ -71,8 +71,9 @@ class PersonFilter:
                 _download_model(model_dir)
 
         self._load(model_path)
-        logger.info("PersonFilter loaded (conf=%.1f, every %d frames)",
-                     confidence, interval)
+        if self._interp is not None:
+            logger.info("PersonFilter loaded (conf=%.1f, every %d frames)",
+                         confidence, interval)
 
     def _load(self, path: str):
         try:
@@ -91,8 +92,7 @@ class PersonFilter:
             self._output_details = self._interp.get_output_details()
             self._input_shape = self._input_details[0]["shape"]
         except Exception:
-            logger.warning("Failed to init TFLite interpreter (numpy version mismatch?). "
-                           "Person detection disabled.", exc_info=True)
+            logger.warning("Failed to init TFLite interpreter — PersonFilter disabled")
             self._interp = None
 
     def detect(self, frame: np.ndarray) -> bool:
