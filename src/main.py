@@ -93,20 +93,23 @@ def main():
     detector.landing.fall_check_pixels = args.fall_pixels
     detector.sound_callback = player.play
 
-    # Person detection filter (COCO TFLite model)
+    # Person detection filter (COCO TFLite model) — gracefully degrades if tflite missing
     pf = PersonFilter(model_path=args.person_model, confidence=0.4, interval=10)
     detector.person_filter = pf
     detector.landing.person_filter = pf
 
-    # Shuttle ML detection filter (Roboflow inference)
-    sd = ShuttleDetector(
-        model_id=args.shuttle_model,
-        api_key=args.roboflow_api_key,
-        confidence=0.3,
-        interval=10,
-    )
-    detector.shuttle_detector = sd
-    detector.landing.shuttle_detector = sd
+    # Shuttle ML detection filter (Roboflow inference) — only when explicitly configured
+    if args.roboflow_api_key is not None:
+        sd = ShuttleDetector(
+            model_id=args.shuttle_model,
+            api_key=args.roboflow_api_key,
+            confidence=0.3,
+            interval=10,
+        )
+        detector.shuttle_detector = sd
+        detector.landing.shuttle_detector = sd
+    else:
+        logger.info("No --roboflow-api-key given — shuttle ML gate disabled, CV-only mode")
 
     app = create_app(state, detector=detector)
 
